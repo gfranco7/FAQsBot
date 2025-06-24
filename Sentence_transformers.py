@@ -67,10 +67,10 @@ corpus_embedding = model.encode([answer_1,answer_2, answer_3, answer_4])
 qa_model = pipeline("question-answering")
 
 question ="How many models can I host on HuggingFace?"
-context = "My name is Gean Franco and I live in London."
+question_2= "How old is Gean Franco?"
+context = "My name is Gean Franco, I live in London, I'm 24 And I can host 56 models on HuggingFace."
 
-# print(qa_model(question = question, context = context))
-
+#print(qa_model(question = question_2, context = context))
 
 # ==============================================================================
 
