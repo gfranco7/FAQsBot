@@ -112,5 +112,4 @@ for sentence_id, cluster_id in enumerate(clustering_assigment):
         clustered_sentences[cluster_id]=[]
 
     clustered_sentences[cluster_id].append(corpus[sentence_id])
-
 print(clustered_sentences)
