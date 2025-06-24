@@ -20,16 +20,40 @@ answers = df["answer"].tolist()
 model = SentenceTransformer("all-MiniLM-L6-v2")
 index = faiss.read_index(INDEX_PATH)
 
+"""
 print("Bienvenido a Amazun\n")
 user_input = input("Input your question: ")
 
 embedding = model.encode([user_input])
 
 D, I= index.search(embedding, k=1)
+"""
 
-idx = I[0][0]
-distancia = D[0][0]
+eval_df = pd.read_csv("eval_set.csv")
 
+correct = 0
+
+for i, row in eval_df.iterrows():
+    user_q = row["user_question"]
+    expected_a = row["expected_answer"]
+    
+    embedding = model.encode([user_q])
+    D, I= index.search(embedding, k=3)
+    idx = I[0][0]
+    predicted_a = answers[idx]
+
+    print(f"\nPregunta: {user_q}")
+    print(f"Respuesta obtenida: {predicted_a}")
+    print(f"ESperada: {expected_a}")
+
+    if expected_a.strip().lower() in predicted_a.strip().lower():
+        correct+=1
+
+accuracy = correct / len(eval_df)
+print(f"Precision: {accuracy:.2f}")
+
+
+"""
 if distancia < 1.0:
     print("||")
     print(f"Te efieres a: {questions[idx]}")
@@ -38,3 +62,5 @@ else:
     print("||")
     print("No se encontró una respuesta adecuada")
 
+
+"""
