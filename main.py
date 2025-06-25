@@ -1,66 +1,43 @@
-import os
-import pandas as pd 
-import faiss
+import pandas as pd
 import pickle
-from sentence_transformers import SentenceTransformer, util
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
+from sentence_transformers import SentenceTransformer
 
-
-CSV_PATH = "fqs.csv"
-INDEX_PATH = "faq_index.faiss"
-DATA_PATH = "faq_data.pkl"
-
-if not os.path.exists(CSV_PATH):
-    print(f"No se encontró el archivo {CSV_PATH}")
-
-
-df = pd.read_csv(CSV_PATH)
+# Cargar el archivo de preguntas
+df = pd.read_csv("fqs.csv")
 questions = df["question"].tolist()
 answers = df["answer"].tolist()
 
+# Cargar el modelo de embeddings
 model = SentenceTransformer("all-MiniLM-L6-v2")
-index = faiss.read_index(INDEX_PATH)
 
-"""
-print("Bienvenido a Amazun\n")
-user_input = input("Input your question: ")
+# Generar embeddings para las preguntas del CSV
+embeddings = model.encode(questions)
 
-embedding = model.encode([user_input])
+# Guardar los datos para futuros usos (opcional)
+with open("faq_data.pkl", "wb") as f:
+    pickle.dump({"questions": questions, "answers": answers, "embeddings": embeddings}, f)
 
-D, I= index.search(embedding, k=1)
-"""
+# Configurar el buscador con scikit-learn (cosine similarity)
+searcher = NearestNeighbors(n_neighbors=1, metric="cosine")
+searcher.fit(embeddings)
 
-eval_df = pd.read_csv("eval_set.csv")
+# Función para responder preguntas
+def responder(pregunta_usuario):
+    embedding_usuario = model.encode([pregunta_usuario])
+    distancia, indice = searcher.kneighbors(embedding_usuario)
+    idx = indice[0][0]
+    similitud = 1 - distancia[0][0]
 
-correct = 0
+    print(f"\n Pregunta del usuario: {pregunta_usuario}")
+    print(f"Respuesta encontrada: {answers[idx]}")
+    print(f"Similitud coseno: {similitud:.4f}")
 
-for i, row in eval_df.iterrows():
-    user_q = row["user_question"]
-    expected_a = row["expected_answer"]
-    
-    embedding = model.encode([user_q])
-    D, I= index.search(embedding, k=3)
-    idx = I[0][0]
-    predicted_a = answers[idx]
-
-    print(f"\nPregunta: {user_q}")
-    print(f"Respuesta obtenida: {predicted_a}")
-    print(f"ESperada: {expected_a}")
-
-    if expected_a.strip().lower() in predicted_a.strip().lower():
-        correct+=1
-
-accuracy = correct / len(eval_df)
-print(f"Precision: {accuracy:.2f}")
-
-
-"""
-if distancia < 1.0:
-    print("||")
-    print(f"Te efieres a: {questions[idx]}")
-    print(f"Respuesta: {answers[idx]}")
-else:
-    print("||")
-    print("No se encontró una respuesta adecuada")
-
-
-"""
+# Ejemplo interactivo
+if __name__ == "__main__":
+    while True:
+        pregunta = input("\nEscribe tu pregunta (o 'exit'): ")
+        if pregunta.lower() == "exit":
+            break
+        responder(pregunta)
